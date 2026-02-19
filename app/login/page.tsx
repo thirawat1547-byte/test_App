@@ -1,13 +1,10 @@
-// ...existing code...
-"use client"; // สำคัญมาก: ต้องใส่บรรทัดนี้เพื่อใช้ useRouter และ useState
+"use client";
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
-// ...existing code...
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -19,23 +16,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Use Supabase auth to sign in with email + password
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // ปรับมาเรียก API Route แทนการเรียก Supabase โดยตรงที่หน้าบ้าน
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        // show friendly error
-        alert(error.message || 'ไม่สามารถเข้าสู่ระบบได้');
-      } else if (data && data.session) {
-        // Successful sign in -> redirect
+      const result = await response.json();
+
+      if (response.ok) {
+        // ล็อกอินสำเร็จ -> ไปหน้า Dashboard
         router.push('/dashboard');
+        router.refresh(); // เพื่อให้อัปเดตสถานะ Auth ทั่วทั้งแอป
       } else {
-        alert('ไม่สามารถเข้าสู่ระบบได้ ลองอีกครั้ง');
+        // แสดงข้อความผิดพลาดจาก Server
+        alert(result.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
     } finally {
       setLoading(false);
     }
@@ -90,7 +89,7 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition active:scale-95 flex justify-center items-center"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition active:scale-95 flex justify-center items-center disabled:bg-blue-300"
           >
             {loading ? <Loader2 className="animate-spin mr-2" size={20} /> : "เข้าสู่ระบบ"}
           </button>
@@ -103,4 +102,3 @@ export default function LoginPage() {
     </div>
   );
 }
-// ...existing code...
